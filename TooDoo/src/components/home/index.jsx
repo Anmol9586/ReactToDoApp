@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../contexts/authContext';
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../../contexts/authContext";
 import {
     query,
     collection,
@@ -7,12 +7,12 @@ import {
     doc,
     deleteDoc,
     addDoc,
-    onSnapshot
-} from 'firebase/firestore';
-import { db } from '../../firebase/firebase.js';
-import Todo from '../todo/Todo.jsx';
-import Footer from '../footer/index.jsx';
-import Swal from 'sweetalert2';
+    onSnapshot,
+} from "firebase/firestore";
+import { db } from "../../firebase/firebase.js";
+import Todo from "../todo/Todo.jsx";
+import Footer from "../footer/index.jsx";
+import Swal from "sweetalert2";
 
 const style = {
     bg: `h-screen w-screen p-4 bg-gradient-to-r from-[#2F80ED] to-[#1CB5E0]`,
@@ -26,27 +26,22 @@ const style = {
 
 const Home = () => {
     const [todos, setTodos] = useState([]);
-    const [input, setInput] = useState('');
-    const { userLoggedIn } = useAuth(); // Assuming you have an auth context setup
+    const [input, setInput] = useState("");
+    const { userLoggedIn } = useAuth();
 
-    // Create todo
-    const createTodo = async (e) => {
-        e.preventDefault();
-        if (input === '') {
-          Swal.fire('Error', 'Please enter a valid todo', 'error');
-          return;
-        }
-        await addDoc(collection(db, 'todos'), {
-          text: input,
-          completed: false,
-        });
-        setInput('');
-      };
-    
-
-    // Read todo from firebase
     useEffect(() => {
-        const q = query(collection(db, 'todos'));
+        const savedTodos = JSON.parse(localStorage.getItem("todos"));
+        if (savedTodos) {
+            setTodos(savedTodos);
+        }
+    }, []);
+
+    useEffect(() => {
+        localStorage.setItem("todos", JSON.stringify(todos));
+    }, [todos]);
+
+    useEffect(() => {
+        const q = query(collection(db, "todos"));
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
             let todosArr = [];
             querySnapshot.forEach((doc) => {
@@ -57,44 +52,53 @@ const Home = () => {
         return () => unsubscribe();
     }, []);
 
-    // Update todo in firebase
+    const createTodo = async (e) => {
+        e.preventDefault();
+        if (input === "") {
+            Swal.fire("Error", "Please enter a valid todo", "error");
+            return;
+        }
+        await addDoc(collection(db, "todos"), {
+            text: input,
+            completed: false,
+        });
+        setInput("");
+    };
+
     const toggleComplete = async (todo) => {
-        await updateDoc(doc(db, 'todos', todo.id), {
+        await updateDoc(doc(db, "todos", todo.id), {
             completed: !todo.completed,
         });
     };
 
-    // Edit todo
     const editTodo = async (todo, newText) => {
-        await updateDoc(doc(db, 'todos', todo.id), {
+        await updateDoc(doc(db, "todos", todo.id), {
             text: newText,
         });
     };
 
-    // Delete todo
     const deleteTodo = async (id) => {
-        await deleteDoc(doc(db, 'todos', id));
+        await deleteDoc(doc(db, "todos", id));
     };
 
     return (
         <div className={style.bg}>
             <div className={style.container}>
-<Footer/>
                 <h3 className={style.heading}>Todo App</h3>
                 <form onSubmit={createTodo} className={style.form}>
                     <input
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         className={style.input}
-                        type='text'
-                        placeholder='Add Todo'
+                        type="text"
+                        placeholder="Add Todo"
                     />
-                    <button className={style.button}>Add Todo</button>
+                    <button className={style.button} type="submit">Add Todo</button>
                 </form>
                 <ul>
-                    {todos.map((todo, index) => (
+                    {todos.map((todo) => (
                         <Todo
-                            key={index}
+                            key={todo.id}
                             todo={todo}
                             toggleComplete={toggleComplete}
                             deleteTodo={deleteTodo}
@@ -105,10 +109,10 @@ const Home = () => {
                 {todos.length < 1 ? null : (
                     <p className={style.count}>{`You have ${todos.length} todos`}</p>
                 )}
+                <Footer />
             </div>
-            
         </div>
     );
-}
+};
 
 export default Home;
